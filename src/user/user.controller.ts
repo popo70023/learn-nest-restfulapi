@@ -1,57 +1,69 @@
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpException,
+  HttpStatus,
+  Param,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
+
 import { UserService } from './user.service';
-import { User } from './user';
+import { User } from '../entity/user';
 import { AuthGuard } from '../auth/auth.guard';
 
 @Controller('user')
 export class UserController {
-    constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService) {}
 
-    @Post()
-    create(@Body() user:User): void {
-        if(user.username === undefined || user.password === undefined || user.email === undefined) {
-            throw new HttpException('BAD_REQUEST', HttpStatus.BAD_REQUEST);
-        }
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard)
+  @Delete(':id')
+  async delete(@Param('id') id: string) {
+    if (!this.userService.findById(parseInt(id)))
+      throw new HttpException('NOT_FOUND', HttpStatus.NOT_FOUND);
 
-        this.userService.create(user);
-        console.log('新增成功', user);
-    }
+    const result = await this.userService.deleteById(parseInt(id));
+    console.log(result, id);
+  }
 
-    @UseGuards(AuthGuard)
-    @Delete(':id')
-    delete(@Param('id') id: string): void {
-        if(!this.userService.exists(parseInt(id))) {
-            throw new HttpException('NOT_FOUND', HttpStatus.NOT_FOUND);
-        }
+  @HttpCode(HttpStatus.OK)
+  @Get()
+  async findAll(): Promise<User[]> {
+    const users = await this.userService.findAll();
 
-        this.userService.delete(parseInt(id));
-        console.log('刪除成功', id);
-    }
+    console.log('讀取成功');
+    return users;
+  }
 
-    @UseGuards(AuthGuard)
-    @Get(':id')
-    read(@Param('id') id: string): Promise<User> {
-        let user = this.userService.read(parseInt(id))
+  @HttpCode(HttpStatus.OK)
+  @Get(':id')
+  async findOne(@Param('id') id: string): Promise<User> {
+    const user = await this.userService.findById(parseInt(id));
+    if (!user) throw new HttpException('NOT_FOUND', HttpStatus.NOT_FOUND);
 
-        if(user === undefined) {
-            throw new HttpException('NOT_FOUND', HttpStatus.NOT_FOUND);
-        }
+    console.log('讀取成功', id);
+    return user;
+  }
 
-        console.log('讀取成功', id);
-        return user;
-    }
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard)
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() user: User) {
+    if (!this.userService.findById(parseInt(id)))
+      throw new HttpException('NOT_FOUND', HttpStatus.NOT_FOUND);
+    if (
+      parseInt(id) != user.userId ||
+      user.username === undefined ||
+      user.password === undefined ||
+      user.email === undefined
+    )
+      throw new HttpException('BAD_REQUEST', HttpStatus.BAD_REQUEST);
 
-    @UseGuards(AuthGuard)
-    @Put(':id')
-    update(@Param('id') id: string, @Body() user:User): void {
-        if(!this.userService.exists(parseInt(id))) {
-            throw new HttpException('NOT_FOUND', HttpStatus.NOT_FOUND);
-        }
-        if(parseInt(id) != user.userId || user.username === undefined || user.password === undefined || user.email === undefined) {
-            throw new HttpException('BAD_REQUEST', HttpStatus.BAD_REQUEST);
-        }
-
-        this.userService.update(user);
-        console.log('更改成功', id, user);
-    }
+    const result = await this.userService.update(user);
+    console.log(result, id, user);
+  }
 }
