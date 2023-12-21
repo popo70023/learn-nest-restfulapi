@@ -12,6 +12,11 @@ export class UserService {
     private readonly userRepository: Repository<User>,
   ) {}
 
+  async create(userDto: UserDto): Promise<User> {
+    const createdUser = this.userRepository.create(userDto);
+    return this.userRepository.save(createdUser);
+  }
+
   async deleteById(id: number): Promise<DeleteResult> {
     return this.userRepository.delete(id);
   }
@@ -21,19 +26,14 @@ export class UserService {
   }
 
   async findById(userId: number): Promise<User | undefined> {
-    return this.userRepository.findOne({ where: { userId: userId } });
+    return this.userRepository.findOne({ where: { userId } });
   }
 
   async findByUsername(username: string): Promise<User | undefined> {
-    return this.userRepository.findOne({ where: { username: username } });
+    return this.userRepository.findOne({ where: { username } });
   }
 
   async update(updatedUser: User): Promise<UpdateResult> {
     return this.userRepository.update(updatedUser.userId, updatedUser);
-  }
-
-  async create(userDto: UserDto): Promise<User> {
-    const createdUser = this.userRepository.create(userDto);
-    return this.userRepository.save(createdUser);
   }
 }
