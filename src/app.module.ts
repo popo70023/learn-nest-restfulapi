@@ -8,6 +8,7 @@ import { UserModule } from './user/user.module';
 import { User } from './entity/user';
 import { ProductModule } from './product/product.module';
 import { Product } from './entity/product';
+import { ProductCategory } from './entity/product-category';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { Product } from './entity/product';
       type: 'sqlite',
       database: '../db/restfulapi.db',
       synchronize: true,
-      entities: [User, Product],
+      entities: [User, Product, ProductCategory],
     }),
     AuthModule,
     UserModule,

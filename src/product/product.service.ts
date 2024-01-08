@@ -19,11 +19,8 @@ export class ProductService {
     const { categoryNames, ...productData } = productDto;
     const createdProduct = await this.productRepository.create(productData);
 
-    for (const categoryName in categoryNames) {
-      let theCategory = await this.findCategoryByCategoryName(categoryName);
-      if (!theCategory) theCategory = await this.createCategory(categoryName);
-      createdProduct.categories.push(theCategory);
-    }
+    createdProduct.categories =
+      await this.findAndCreateCategoryByCategoryNames(categoryNames);
 
     return this.productRepository.save(createdProduct);
   }
@@ -38,7 +35,7 @@ export class ProductService {
   }
 
   async findAll(): Promise<Product[]> {
-    return this.productRepository.find();
+    return this.productRepository.find({ relations: ['categories'] });
   }
 
   async findByCategory(Category: ProductCategory): Promise<Product[]> {
@@ -46,11 +43,17 @@ export class ProductService {
   }
 
   async findById(productId: number): Promise<Product | undefined> {
-    return this.productRepository.findOne({ where: { productId } });
+    return this.productRepository.findOne({
+      where: { productId },
+      relations: ['categories'],
+    });
   }
 
   async findByTitle(title: string): Promise<Product | undefined> {
-    return this.productRepository.findOne({ where: { title } });
+    return this.productRepository.findOne({
+      where: { title },
+      relations: ['categories'],
+    });
   }
 
   async findCategoryByCategoryName(
@@ -70,28 +73,56 @@ export class ProductService {
     return products;
   }
 
-  async update(updatedProduct: Product): Promise<UpdateResult> {
-    return this.productRepository.update(
-      updatedProduct.productId,
-      updatedProduct,
-    );
+  async update(
+    updatedId: number,
+    updatedProductDto: ProductDto,
+  ): Promise<Product> {
+    const { categoryNames, ...productData } = updatedProductDto;
+    const updatedProduct = await this.findById(updatedId);
+    updatedProduct.price = productData.price;
+    updatedProduct.stock = productData.stock;
+    updatedProduct.thumbnail = productData.thumbnail;
+    updatedProduct.title = productData.title;
+    updatedProduct.description = productData.description;
+    updatedProduct.categories =
+      await this.findAndCreateCategoryByCategoryNames(categoryNames);
+
+    return this.productRepository.save(updatedProduct);
   }
 
   async updatePrice(
     updatedId: number,
     newPrice: number,
   ): Promise<UpdateResult> {
-    const theProduct = await this.findById(updatedId);
+    const theProduct = await this.productRepository.findOne({
+      where: { productId: updatedId },
+    });
     theProduct.price = newPrice;
-    return this.update(theProduct);
+    return this.productRepository.update(updatedId, theProduct);
   }
 
   async increaseStock(
     updatedId: number,
     increaseStock: number,
   ): Promise<UpdateResult> {
-    const theProduct = await this.findById(updatedId);
+    const theProduct = await this.productRepository.findOne({
+      where: { productId: updatedId },
+    });
     theProduct.stock += increaseStock;
-    return this.update(theProduct);
+    return this.productRepository.update(updatedId, theProduct);
+  }
+
+  async findAndCreateCategoryByCategoryNames(
+    categoryNames: string[],
+  ): Promise<ProductCategory[]> {
+    const categories: Array<ProductCategory> = [];
+
+    for (const categoryName of categoryNames) {
+      let theCategory = await this.findCategoryByCategoryName(categoryName);
+      if (!theCategory) theCategory = await this.createCategory(categoryName);
+      categories.push(theCategory);
+    }
+
+    return categories;
   }
 }

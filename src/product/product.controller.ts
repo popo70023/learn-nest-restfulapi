@@ -67,21 +67,18 @@ export class ProductController {
   }
 
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard)
   @Put(':id')
-  async update(@Param('id') id: string, @Body() product: Product) {
+  async update(@Param('id') id: string, @Body() productDto: ProductDto) {
     if (!this.productService.findById(parseInt(id)))
       throw new HttpException('NOT_FOUND', HttpStatus.NOT_FOUND);
     if (
-      parseInt(id) != product.productId ||
-      product.price === undefined ||
-      product.stock === undefined ||
-      product.title === undefined ||
-      product.categories === undefined
+      productDto.price === undefined ||
+      productDto.stock === undefined ||
+      productDto.title === undefined
     )
       throw new HttpException('BAD_REQUEST', HttpStatus.BAD_REQUEST);
 
-    const result = await this.productService.update(product);
-    console.log(result, id, product);
+    const result = await this.productService.update(parseInt(id), productDto);
+    console.log(result, id, productDto);
   }
 }
